@@ -18,12 +18,6 @@ const App = () => {
 
       {/* 点击按钮时，更新 count 状态 */}
       <button onClick={() => setCount((c) => c + 1)}>count: {count}</button>
-
-      {/* 输入框内容变化时，更新 text 状态 */}
-      <input onInput={(e) => setText(e.target.value)} value={text} />
-
-      {/* 显示当前的 text 状态 */}
-      <div>{text}</div>
     </div>
   );
 };

@@ -50,6 +50,10 @@ function createDom(fiber) {
  * @param {*} nextProps 新的属性
  */
 function updateDom(dom, prevProps, nextProps) {
+  // 添加空值检查，确保prevProps和nextProps始终是对象
+  prevProps = prevProps || {};
+  nextProps = nextProps || {};
+
   // 1. 移除旧的或已改变的事件监听器
   Object.keys(prevProps)
     .filter(isEvent)
@@ -68,12 +72,11 @@ function updateDom(dom, prevProps, nextProps) {
     });
 
   // 3. 设置新的或已改变的属性
-  Object.keys(nextProps)
-    .filter(isProperty)
-    .filter(isNew(prevProps, nextProps))
-    .forEach((name) => {
-      dom[name] = nextProps[name];
-    });
+  Object.keys(nextProps).forEach((key) => {
+    if (key !== "children") {
+      dom[key] = nextProps[key]; // 将name改为key
+    }
+  });
 
   // 4. 添加新的事件监听器
   Object.keys(nextProps)
@@ -93,13 +96,17 @@ function updateDom(dom, prevProps, nextProps) {
  * @param {*} container 容器 DOM 节点
  */
 function render(element, container) {
+  // 处理element为undefined的情况
+  if (element === undefined) {
+    element = { type: "TEXT_ELEMENT", props: { nodeValue: "" } };
+  }
   // 初始化 work-in-progress root
   wipRoot = {
     dom: container,
     props: {
       children: [element],
     },
-    alternate: currentRoot, // alternate 指向旧的 fiber 树
+    alternate: currentRoot,
   };
   deletions = []; // 初始化删除数组
   nextUnitWork = wipRoot; // 设置第一个工作单元
@@ -167,7 +174,7 @@ function performUnitOfWork(fiber) {
 
 /**
  * 将 fiber 树提交到 DOM
- */
+ */ 
 function commitRoot() {
   // 1. 先处理所有需要删除的节点
   deletions.forEach(commitWork);
@@ -238,7 +245,9 @@ function updateFunctionComponent(fiber) {
   hookIndex = 0;
   wipFiber.hooks = []; // 初始化 hooks 数组
   // 执行函数组件，得到子元素
-  const children = [fiber.type(fiber.props)];
+  const componentResult = fiber.type(fiber.props);
+  // 处理组件返回 undefined 的情况
+  const children = componentResult != null ? [componentResult] : [];
   // 协调子元素
   reconcileChildren(fiber, children);
 }
@@ -293,8 +302,9 @@ function updateHostComponent(fiber) {
   if (!fiber.dom) {
     fiber.dom = createDom(fiber);
   }
-  // 协调子元素
-  reconcileChildren(fiber, fiber.props.children);
+  // 添加空值检查，安全访问children属性
+  const children = fiber.props?.children || [];
+  reconcileChildren(fiber, children);
 }
 
 /**
@@ -392,3 +402,4 @@ function createTextElement(text) {
 
 // 导出公共 API
 export default { render, createElement, useState };
+export { render, createElement, useState };
